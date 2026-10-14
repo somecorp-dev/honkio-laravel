@@ -2,7 +2,7 @@
 
 [HonkIO](https://honkio.ca) for Laravel: a mail transport and an SMS notification channel on top of [`honkio/honkio-php`](https://honkio.ca/docs/sdk). Canadian SMS and email, with CASL built in. Data is stored in Canada (ca-central-1).
 
-- PHP 8.2 or newer, Laravel 11, 12 or 13 (auto-discovered, no manual provider registration)
+- PHP 8.2 or newer, Laravel 12 or 13 (auto-discovered, no manual provider registration)
 - No automatic retries: a send costs money, so retrying is your choice. Notifications carry an idempotency key, so a retried queued job cannot send or charge twice. Queued mail retries are not deduplicated: this transport sends no idempotency key for email, so a job retried after a timeout can send twice.
 
 ## Install
@@ -57,7 +57,9 @@ class SpringSale extends Mailable
 }
 ```
 
-If the API refuses a message (for example `EMAIL_COMMERCIAL_MULTI_RECIPIENT`, or no consent), the SDK exception is thrown from `Mail::send()`, so Laravel's normal failure handling applies. Queued mail is retried by the queue as usual.
+If the API refuses a message (for example `EMAIL_COMMERCIAL_MULTI_RECIPIENT`, or no consent), the SDK exception is thrown from `Mail::send()`, so Laravel's normal failure handling applies. Server errors (5xx) and connection failures arrive as a Symfony `TransportException` with the SDK exception as `getPrevious()`, which is what lets Laravel and the queue treat them as retryable; 4xx refusals arrive as the SDK exception itself. Queued mail is retried by the queue as usual.
+
+The API reserves some headers and refuses a message that sets one with `EMAIL_HEADER_INVALID`: `List-Unsubscribe`, `List-Unsubscribe-Post`, `Content-Disposition`, `ARC-*` and `X-SES-*`.
 
 ## SMS notifications
 
@@ -119,6 +121,10 @@ vendor/bin/phpunit
 ```
 
 The script is idempotent, and CI runs it before `composer install`.
+
+## Testing your own code
+
+Use Laravel's fakes: `Mail::fake()` for mail and `Notification::fake()` for the SMS channel. To test the real transport or channel against canned API answers, bind a `Honkio\Honkio` built with a Guzzle `MockHandler` client (`new Honkio\Honkio('key', ['http_client' => $client])`). `Honkio\Honkio` is `final`, so Mockery's `shouldReceive` does not work on it.
 
 ## License
 

@@ -4,7 +4,7 @@ Versions are published to Packagist from a read-only mirror by hand; a version w
 
 ## 0.1.0
 
-First release. Supports Laravel 11, 12 and 13 on PHP 8.2 or newer.
+First release. Supports Laravel 12 and 13 on PHP 8.2 or newer (Laravel 11 is end of life and is not supported).
 
 ### Added
 

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Honkio\Laravel\Mail;
 
-use Honkio\Exception\ApiException;
 use Honkio\Exception\ConnectionException;
 use Honkio\Exception\InternalServerException;
 use Honkio\Exception\InvalidArgumentException;
