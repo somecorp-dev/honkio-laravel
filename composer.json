@@ -1,0 +1,51 @@
+{
+    "name": "honkio/laravel",
+    "description": "Laravel mail transport and SMS notification channel for HonkIO: Canadian SMS and email, CASL built in.",
+    "type": "library",
+    "license": "MIT",
+    "keywords": ["laravel", "sms", "email", "mail", "notifications", "honkio", "casl", "canada"],
+    "homepage": "https://honkio.ca/docs/sdk",
+    "support": {
+        "source": "https://github.com/jeffcaldwellca/honkio",
+        "docs": "https://honkio.ca/docs/sdk"
+    },
+    "require": {
+        "php": ">=8.2",
+        "honkio/honkio-php": "^0.1",
+        "illuminate/mail": "^11.0 || ^12.0 || ^13.0",
+        "illuminate/notifications": "^11.0 || ^12.0 || ^13.0",
+        "illuminate/support": "^11.0 || ^12.0 || ^13.0",
+        "symfony/mailer": "^7.0 || ^8.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^9.0 || ^10.0 || ^11.0",
+        "phpunit/phpunit": "^11.0 || ^12.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Honkio\\Laravel\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Honkio\\Laravel\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Honkio\\Laravel\\HonkioServiceProvider"
+            ],
+            "aliases": {
+                "Honkio": "Honkio\\Laravel\\Facades\\Honkio"
+            }
+        }
+    },
+    "scripts": {
+        "test": "phpunit"
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "stable"
+}
