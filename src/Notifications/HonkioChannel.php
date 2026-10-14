@@ -44,7 +44,10 @@ class HonkioChannel
         // queued job retried after a timeout cannot send or charge twice.
         $key = null;
         if (!empty($notification->id)) {
-            $who = method_exists($notifiable, 'getKey') ? (string) $notifiable->getKey() : (string) $to;
+            // AnonymousNotifiable::getKey() returns null, so fall back to the
+            // route: two anonymous recipients must not share a key.
+            $id = method_exists($notifiable, 'getKey') ? $notifiable->getKey() : null;
+            $who = $id !== null && $id !== '' ? (string) $id : (string) $to;
             $key = 'laravel-notification-' . $notification->id . '-' . sha1(get_class($notifiable) . ':' . $who);
         }
 

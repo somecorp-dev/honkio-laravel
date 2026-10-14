@@ -7,6 +7,7 @@ namespace Honkio\Laravel\Tests;
 use Honkio\Exception\InvalidArgumentException;
 use Honkio\Laravel\Notifications\HonkioChannel;
 use Honkio\Laravel\Notifications\HonkioMessage;
+use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Notification as NotificationFacade;
@@ -150,5 +151,18 @@ class NotificationChannelTest extends TestCase
 
         $this->assertCount(1, $this->history);
         $this->assertNotSame('', $this->history[0]['request']->getHeaderLine('Idempotency-Key'));
+    }
+
+    public function test_anonymous_notifiable_uses_the_route_in_the_key(): void
+    {
+        $this->fakeApi($this->apiJson(['id' => 'msg_anon']));
+
+        NotificationFacade::route('honkio', '+16135550999')->notify($this->notification('Hi', 'anon-1'));
+
+        $this->assertSame('+16135550999', $this->sentBody()['to']);
+        $this->assertSame(
+            'laravel-notification-anon-1-' . sha1(AnonymousNotifiable::class . ':+16135550999'),
+            $this->history[0]['request']->getHeaderLine('Idempotency-Key'),
+        );
     }
 }

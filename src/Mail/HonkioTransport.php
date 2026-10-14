@@ -4,11 +4,17 @@ declare(strict_types=1);
 
 namespace Honkio\Laravel\Mail;
 
+use Honkio\Exception\ApiException;
+use Honkio\Exception\ConnectionException;
+use Honkio\Exception\InternalServerException;
+use Honkio\Exception\InvalidArgumentException;
 use Honkio\Honkio;
+use Symfony\Component\Mailer\Exception\TransportException;
 use Symfony\Component\Mailer\SentMessage;
 use Symfony\Component\Mailer\Transport\AbstractTransport;
 use Symfony\Component\Mime\Address;
 use Symfony\Component\Mime\Email;
+use Symfony\Component\Mime\Header\UnstructuredHeader;
 use Symfony\Component\Mime\MessageConverter;
 use Symfony\Component\Mime\Part\DataPart;
 
@@ -39,7 +45,17 @@ class HonkioTransport extends AbstractTransport
     {
         $email = MessageConverter::toEmail($message->getOriginalMessage());
 
-        $result = $this->client->emails->send($this->payload($email));
+        $params = $this->payload($email);
+
+        try {
+            $result = $this->client->emails->send($params);
+        } catch (ConnectionException | InternalServerException $e) {
+            // Transient failures: Symfony's failover and round-robin
+            // transports only move on from a TransportException.
+            throw new TransportException($e->getMessage(), $e->getCode(), $e);
+        }
+        // Other API refusals (4xx, e.g. EMAIL_COMMERCIAL_MULTI_RECIPIENT)
+        // propagate unchanged: another transport would refuse them too.
 
         $id = $result['id'] ?? null;
         if (is_string($id) && $id !== '') {
@@ -84,13 +100,15 @@ class HonkioTransport extends AbstractTransport
         foreach ($email->getHeaders()->all() as $header) {
             $name = $header->getName();
             if (strcasecmp($name, self::COMMERCIAL_HEADER) === 0) {
-                $commercial = strtolower(trim($header->getBodyAsString())) === 'true';
+                $commercial = $this->parseCommercial($header->getBodyAsString());
                 continue;
             }
             if (in_array(strtolower($name), self::OWN_HEADERS, true)) {
                 continue;
             }
-            $headers[$name] = $header->getBodyAsString();
+            // The decoded value, so non-ASCII text is not sent MIME-encoded
+            // or folded. A repeated header name keeps its last value.
+            $headers[$name] = $header instanceof UnstructuredHeader ? $header->getValue() : $header->getBodyAsString();
         }
         if ($headers !== []) {
             $params['headers'] = $headers;
@@ -99,7 +117,7 @@ class HonkioTransport extends AbstractTransport
             $params['is_commercial'] = true;
         }
 
-        $attachments = array_map($this->attachment(...), $email->getAttachments());
+        $attachments = array_map(fn (DataPart $part): array => $this->attachment($part, (string) $email->getHtmlBody()), $email->getAttachments());
         if ($attachments !== []) {
             $params['attachments'] = $attachments;
         }
@@ -107,8 +125,23 @@ class HonkioTransport extends AbstractTransport
         return $params;
     }
 
+    /**
+     * Only an explicit "true" or "false": anything else would silently send a
+     * marketing message as transactional, skipping the consent check.
+     */
+    private function parseCommercial(string $value): bool
+    {
+        return match (strtolower(trim($value))) {
+            'true' => true,
+            'false' => false,
+            default => throw new InvalidArgumentException(
+                self::COMMERCIAL_HEADER . ' must be "true" or "false", got "' . $value . '".'
+            ),
+        };
+    }
+
     /** @return array<string, string> */
-    private function attachment(DataPart $part): array
+    private function attachment(DataPart $part, string $html): array
     {
         $out = [
             'filename' => $part->getFilename() ?? 'attachment',
@@ -116,7 +149,13 @@ class HonkioTransport extends AbstractTransport
             'content_type' => $part->getMediaType() . '/' . $part->getMediaSubtype(),
         ];
         if ($part->getPreparedHeaders()->getHeaderBody('Content-Disposition') === 'inline') {
-            $out['content_id'] = $part->getContentId();
+            // An inline name the HTML references as cid:<name> is the id the
+            // HTML expects; otherwise use the part's own generated id.
+            $name = $part->getFilename();
+            $referenced = $name !== null
+                && preg_match('/^[A-Za-z0-9._@-]{1,100}$/', $name) === 1
+                && str_contains($html, 'cid:' . $name);
+            $out['content_id'] = $referenced ? $name : $part->getContentId();
         }
 
         return $out;

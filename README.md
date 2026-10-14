@@ -3,7 +3,7 @@
 [HonkIO](https://honkio.ca) for Laravel: a mail transport and an SMS notification channel on top of [`honkio/honkio-php`](https://honkio.ca/docs/sdk). Canadian SMS and email, with CASL built in. Data is stored in Canada (ca-central-1).
 
 - PHP 8.2 or newer, Laravel 11, 12 or 13 (auto-discovered, no manual provider registration)
-- No automatic retries: a send costs money, so retrying is your choice. Notifications carry an idempotency key, so a retried queued job can not send or charge twice.
+- No automatic retries: a send costs money, so retrying is your choice. Notifications carry an idempotency key, so a retried queued job cannot send or charge twice. Queued mail retries are not deduplicated: this transport sends no idempotency key for email, so a job retried after a timeout can send twice.
 
 ## Install
 
@@ -37,7 +37,7 @@ Add a mailer to `config/mail.php`:
 ],
 ```
 
-Then `MAIL_MAILER=honkio`, or `Mail::mailer('honkio')->to(...)->send(...)`. The `from` address must belong to a verified sending domain on your account. From, to, cc, bcc, reply-to, subject, text, HTML, custom headers and attachments are all sent.
+Then `MAIL_MAILER=honkio`, or `Mail::mailer('honkio')->to(...)->send(...)`. The `from` address must belong to a verified sending domain on your account. From, to, cc, bcc, reply-to, subject, text, HTML, custom headers and attachments are all sent (if a custom header name is repeated, the last value is sent). The header `X-HonkIO-Commercial` accepts only `true` or `false`; any other value throws before anything is sent.
 
 Email is **transactional by default**. A marketing message must say so, and then the API holds it to CASL: consent on file, and one recipient per message. Mark a Mailable commercial with a header, which the transport removes and sends as `is_commercial: true`:
 

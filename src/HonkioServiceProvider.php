@@ -31,11 +31,11 @@ class HonkioServiceProvider extends ServiceProvider
             return new Honkio($config['api_key'] ?? null, $options);
         });
 
-        $this->app->afterResolving(MailManager::class, function (MailManager $manager): void {
+        $this->callAfterResolving(MailManager::class, function (MailManager $manager): void {
             $manager->extend('honkio', fn (array $config) => new HonkioTransport($this->app->make(Honkio::class)));
         });
 
-        $this->app->afterResolving(ChannelManager::class, function (ChannelManager $manager): void {
+        $this->callAfterResolving(ChannelManager::class, function (ChannelManager $manager): void {
             $manager->extend('honkio', fn ($app) => $app->make(HonkioChannel::class));
         });
     }

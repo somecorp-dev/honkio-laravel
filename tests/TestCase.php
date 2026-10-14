@@ -36,7 +36,7 @@ abstract class TestCase extends Orchestra
     }
 
     /** Bind a real SDK client whose HTTP layer is a recording mock. */
-    protected function fakeApi(Response ...$responses): void
+    protected function fakeApi(Response|\Throwable ...$responses): void
     {
         $this->history = [];
         $this->mock = new MockHandler($responses);

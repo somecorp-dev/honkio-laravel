@@ -20,6 +20,13 @@ use Illuminate\Support\Facades\Facade;
  * @method static \Honkio\Resource\PhoneNumbers phoneNumbers()
  * @method static \Honkio\Resource\Consents consents()
  * @method static \Honkio\Resource\Webhooks webhooks()
+ * @method static \Honkio\Resource\Verify verify()
+ * @method static \Honkio\Resource\ConsentBatches consentBatches()
+ * @method static \Honkio\Resource\OptInConfirmations optInConfirmations()
+ * @method static \Honkio\Resource\TollFreeVerifications tollFreeVerifications()
+ * @method static \Honkio\Resource\BusinessVerification businessVerification()
+ * @method static \Honkio\Resource\AutoTopup autoTopup()
+ * @method static \Honkio\Resource\TopupCapRequests topupCapRequests()
  *
  * @see \Honkio\Honkio
  */
