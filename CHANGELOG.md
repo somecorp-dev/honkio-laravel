@@ -2,7 +2,7 @@
 
 Versions are published to Packagist from a read-only mirror by hand; a version without a date is not published yet.
 
-## 0.2.0
+## 0.2.0 (2026-10-17)
 
 Requires `honkio/honkio-php` ^0.2.
 
