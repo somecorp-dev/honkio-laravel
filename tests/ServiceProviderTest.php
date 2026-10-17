@@ -56,6 +56,18 @@ class ServiceProviderTest extends TestCase
         $this->assertStringEndsWith('config/honkio.php', array_key_first($paths));
     }
 
+    public function test_retry_settings_reach_the_client(): void
+    {
+        $this->assertSame(2, $this->app['config']->get('honkio.max_retries'));
+        $this->assertSame(60, $this->app['config']->get('honkio.max_retry_delay'));
+
+        // A string from the environment is a number to the client; a negative one is refused like the SDK's own option.
+        $this->app['config']->set('honkio.max_retries', '-1');
+        $this->app->forgetInstance(Honkio::class);
+        $this->expectException(InvalidArgumentException::class);
+        $this->app->make(Honkio::class);
+    }
+
     public function test_mail_transport_and_channel_are_registered(): void
     {
         $this->assertInstanceOf(HonkioTransport::class, Mail::mailer('honkio')->getSymfonyTransport());

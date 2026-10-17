@@ -21,11 +21,18 @@ class HonkioServiceProvider extends ServiceProvider
         // Built on first resolve, so a missing key fails when you use HonkIO,
         // not when the application boots.
         $this->app->singleton(Honkio::class, function (Application $app): Honkio {
-            /** @var array{api_key?: ?string, base_url?: ?string} $config */
+            /** @var array{api_key?: ?string, base_url?: ?string, max_retries?: mixed, max_retry_delay?: mixed} $config */
             $config = $app['config']->get('honkio', []);
             $options = [];
             if (is_string($config['base_url'] ?? null) && $config['base_url'] !== '') {
                 $options['base_url'] = $config['base_url'];
+            }
+            // From env() these arrive as strings.
+            if (is_numeric($config['max_retries'] ?? null)) {
+                $options['max_retries'] = (int) $config['max_retries'];
+            }
+            if (is_numeric($config['max_retry_delay'] ?? null)) {
+                $options['max_retry_delay'] = (float) $config['max_retry_delay'];
             }
 
             return new Honkio($config['api_key'] ?? null, $options);

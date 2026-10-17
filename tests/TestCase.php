@@ -43,9 +43,10 @@ abstract class TestCase extends Orchestra
         $stack = HandlerStack::create($this->mock);
         $stack->push(Middleware::history($this->history));
 
+        // No retries: each queued response answers one call. Retrying is the PHP SDK's, tested there.
         $this->app->instance(
             Honkio::class,
-            new Honkio('mk_test_laravel', ['http_client' => new Client(['handler' => $stack])]),
+            new Honkio('mk_test_laravel', ['http_client' => new Client(['handler' => $stack]), 'max_retries' => 0]),
         );
         // The mail manager caches mailers; rebuild so it takes the bound client.
         $this->app['mail.manager']->forgetMailers();

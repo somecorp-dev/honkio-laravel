@@ -3,7 +3,7 @@
 [HonkIO](https://honkio.ca) for Laravel: a mail transport and an SMS notification channel on top of [`honkio/honkio-php`](https://honkio.ca/docs/sdk). Canadian SMS and email, with CASL built in. Data is stored in Canada (ca-central-1).
 
 - PHP 8.2 or newer, Laravel 12 or 13 (auto-discovered, no manual provider registration)
-- No automatic retries: a send costs money, so retrying is your choice. Notifications carry an idempotency key, so a retried queued job cannot send or charge twice. Queued mail retries are not deduplicated: this transport sends no idempotency key for email, so a job retried after a timeout can send twice.
+- The client retries what waiting fixes (a number's per-minute sending rate, the carrier asking to slow down), at most 2 times by default, with an idempotency key so its retries never send twice; see [Retries](#retries). Notifications carry an idempotency key derived from the notification, so a retried queued job cannot send or charge twice either. Queued mail is not deduplicated across job retries: each send gets a new generated key, so a job retried after a timeout can send twice.
 
 ## Install
 
@@ -19,7 +19,7 @@ HONKIO_SMS_FROM=+14165550100
 # MAIL_MAILER=honkio
 ```
 
-`HONKIO_SMS_FROM` is the default sending number for SMS. `HONKIO_BASE_URL` is only for pointing at another API host. To edit the config, publish it:
+`HONKIO_SMS_FROM` is the default sending number for SMS. `HONKIO_BASE_URL` is only for pointing at another API host. `HONKIO_MAX_RETRIES` (default 2; 0 turns retrying off) and `HONKIO_MAX_RETRY_DELAY` (seconds, default 60) set the client's [retries](#retries). To edit the config, publish it:
 
 ```sh
 php artisan vendor:publish --tag=honkio-config
@@ -108,6 +108,12 @@ Honkio::consents()->check(['phone_number' => '+16135550123']);
 ```
 
 `Honkio\Honkio` is bound as a singleton, so you can also type-hint it. See the [PHP SDK](https://honkio.ca/docs/sdk) for every resource.
+
+## Retries
+
+The client sends a call again, after the wait the API asks for, when the API refused it only because it should wait: `NUMBER_RATE_LIMITED` (the sending number already has a minute of message parts waiting at the carrier), `CARRIER_THROTTLED` and `CARRIER_UNAVAILABLE` (nothing was sent or charged), and `RATE_LIMITED` or a connection failure on a GET or a send with an idempotency key. `CARRIER_TIMEOUT` (the message may have gone out) and the daily, per-recipient and pause limits are never retried. By default it retries at most 2 times and does not wait out a wait longer than 60 seconds; then the exception is thrown as usual, and the queue's own retries apply.
+
+Each wait blocks the worker. On a queue that retries jobs itself, you can turn the client's retries off with `HONKIO_MAX_RETRIES=0`, or lower `HONKIO_MAX_RETRY_DELAY`. Messages and email always carry an idempotency key, so the client's retries never send twice.
 
 ## Developing
 
