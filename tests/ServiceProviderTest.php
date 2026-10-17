@@ -45,6 +45,16 @@ class ServiceProviderTest extends TestCase
     {
         $this->assertSame($this->app->make(Honkio::class), HonkioFacade::getFacadeRoot());
         $this->assertSame($this->app->make(Honkio::class)->emails, HonkioFacade::emails());
+        $this->assertSame($this->app->make(Honkio::class)->sendLimit, HonkioFacade::sendLimit());
+    }
+
+    public function test_the_facade_documents_every_resource_of_the_client(): void
+    {
+        $doc = (string) (new \ReflectionClass(HonkioFacade::class))->getDocComment();
+        foreach ((new \ReflectionClass(Honkio::class))->getProperties(\ReflectionProperty::IS_PUBLIC) as $property) {
+            $line = sprintf('@method static \\%s %s()', (string) $property->getType(), $property->getName());
+            $this->assertStringContainsString($line, $doc);
+        }
     }
 
     public function test_config_is_merged_and_publishes_under_the_tag(): void

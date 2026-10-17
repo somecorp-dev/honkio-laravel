@@ -26,6 +26,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static \Honkio\Resource\TollFreeVerifications tollFreeVerifications()
  * @method static \Honkio\Resource\BusinessVerification businessVerification()
  * @method static \Honkio\Resource\AutoTopup autoTopup()
+ * @method static \Honkio\Resource\SendLimit sendLimit()
  * @method static \Honkio\Resource\TopupCapRequests topupCapRequests()
  *
  * @see \Honkio\Honkio

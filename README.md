@@ -105,6 +105,7 @@ use Honkio\Laravel\Facades\Honkio;
 
 Honkio::messages()->send(['from' => '+14165550100', 'to' => '+16135550123', 'body' => 'Hi']);
 Honkio::consents()->check(['phone_number' => '+16135550123']);
+Honkio::sendLimit()->get(); // the daily cap and usage, and each number's carrier queue (number_queues)
 ```
 
 `Honkio\Honkio` is bound as a singleton, so you can also type-hint it. See the [PHP SDK](https://honkio.ca/docs/sdk) for every resource.
