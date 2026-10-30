@@ -12,7 +12,7 @@ use Illuminate\Contracts\Encryption\Encrypter;
 /**
  * Honkio Auth's discovery, key and refresh cache on a Laravel cache store,
  * shared by every worker. Values are encrypted with the app key: the refresh
- * entries hold tokens for a minute.
+ * entries hold tokens for a couple of seconds.
  */
 final class LaravelCache implements Cache
 {
