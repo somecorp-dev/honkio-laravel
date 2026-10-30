@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Honkio\Laravel\Auth;
 
-use Honkio\Auth\Cache;
+use Honkio\Auth\DeletableCache;
 use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Contracts\Encryption\Encrypter;
@@ -15,7 +15,7 @@ use Illuminate\Contracts\Encryption\Encrypter;
  * session's last refresh is held here, tokens included, for 30 seconds
  * (see HonkioSession).
  */
-final class LaravelCache implements Cache
+final class LaravelCache implements DeletableCache
 {
     public function __construct(
         private readonly Repository $store,
@@ -46,5 +46,10 @@ final class LaravelCache implements Cache
     public function set(string $key, array $value, int $ttlSeconds): void
     {
         $this->store->put($key, $this->encrypter->encrypt(json_encode($value, JSON_THROW_ON_ERROR), false), max(1, $ttlSeconds));
+    }
+
+    public function delete(string $key): void
+    {
+        $this->store->forget($key);
     }
 }
