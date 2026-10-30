@@ -27,11 +27,19 @@ use Illuminate\Contracts\Session\Session;
  *
  * Refreshes are serialised per session with a cache lock (when the cache
  * store supports locks), because refresh tokens rotate and reusing one ends
- * the whole session.
+ * the whole session. Laravel saves the session when a request ends, so a
+ * request that waited on the lock can't see the new tokens in its own copy
+ * of the session yet: after the lock it reads them from this session's entry
+ * in the cache, which holds the last refresh for {@see REFRESH_SECONDS},
+ * answers only this session id and the refresh token it replaced, and is
+ * deleted on forget().
  */
 class HonkioSession
 {
     public const SESSION_KEY = 'honkio_auth';
+
+    /** How long this session's last refresh stays readable by its other requests still holding the old tokens. */
+    public const REFRESH_SECONDS = 30;
 
     private ?RefreshResult $result = null;
 
@@ -118,12 +126,13 @@ class HonkioSession
     /** True when this request is running on kept tokens because Honkio can't be reached. */
     public function offline(): bool
     {
-        return $this->result !== null && $this->result->status === RefreshResult::KEPT;
+        return $this->result !== null && $this->result->isOffline();
     }
 
     /** Forgets the tokens (sign-out on your side). Call logoutUrl() first to end the hosted session too. */
     public function forget(): void
     {
+        $this->cache?->store()->forget($this->refreshKey());
         $this->session->forget(self::SESSION_KEY);
         $this->result = null;
     }
@@ -146,18 +155,47 @@ class HonkioSession
         $store = $this->cache?->store();
         $lockStore = $store?->getStore();
         if (!$lockStore instanceof LockProvider) {
-            return $this->auth->refresh($tokens);
+            return $this->refreshOnce($tokens);
         }
         $lock = $lockStore->lock('honkio-auth:lock:' . hash('sha256', (string) ($tokens->refreshToken ?? $tokens->accessToken)), 30);
         try {
             /** @var RefreshResult */
-            return $lock->block(15, fn (): RefreshResult => $this->auth->refresh($tokens));
+            return $lock->block(15, fn (): RefreshResult => $this->refreshOnce($tokens));
         } catch (LockTimeoutException) {
             // Another request has held the refresh for 15 seconds: Honkio is slow, which is not a refusal.
             return $tokens->expiresAt + TokenRefresher::OUTAGE_GRACE_SECONDS >= time()
                 ? RefreshResult::kept($tokens)
                 : RefreshResult::ended('outage_limit');
         }
+    }
+
+    /**
+     * Refreshes $tokens, unless another request in this session already has:
+     * then its new tokens are used, and the spent refresh token is not sent again.
+     */
+    private function refreshOnce(TokenSet $tokens): RefreshResult
+    {
+        $from = hash('sha256', (string) $tokens->refreshToken);
+        $latest = $this->cache?->get($this->refreshKey());
+        if (is_array($latest) && is_string($latest['from'] ?? null) && hash_equals($latest['from'], $from) && is_array($latest['tokens'] ?? null)) {
+            try {
+                return RefreshResult::refreshed(TokenSet::fromArray($latest['tokens']));
+            } catch (InvalidArgumentException) {
+                // not ours; refresh as usual
+            }
+        }
+
+        $result = $this->auth->refresh($tokens);
+        if ($result->changed() && $result->tokens !== null) {
+            $this->cache?->set($this->refreshKey(), ['from' => $from, 'tokens' => $result->tokens->toArray()], self::REFRESH_SECONDS);
+        }
+
+        return $result;
+    }
+
+    private function refreshKey(): string
+    {
+        return 'honkio-auth:session-refresh:' . hash('sha256', $this->session->getId());
     }
 
     /** @return array<string, mixed> */

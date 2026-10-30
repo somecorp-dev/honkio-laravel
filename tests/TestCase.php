@@ -62,6 +62,7 @@ abstract class TestCase extends Orchestra
             'client_secret' => 'shh',
             'http_client' => new Client(['handler' => $stack]),
             'cache' => $this->app->make(LaravelCache::class),
+            'remember_refreshes' => false, // as the service provider binds it
         ]));
         $this->app->forgetScopedInstances();
         $this->app['auth']->forgetGuards();
