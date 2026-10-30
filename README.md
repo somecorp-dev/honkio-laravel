@@ -172,11 +172,11 @@ This package lives in the HonkIO monorepo and is tested against the PHP SDK on t
 ```sh
 cd sdk/laravel
 bin/use-local-php-sdk.sh   # adds a path repository for ../php to composer.json; do not commit that change
-composer install
+composer update
 vendor/bin/phpunit
 ```
 
-The script is idempotent, and CI runs it before `composer install`.
+The script is idempotent, and CI runs it before installing. `composer.lock` is not committed, so use `composer update` locally: `composer install` against a lock from an older checkout skips dependencies added since (for example `laravel/socialite`, which the Socialite tests need).
 
 ## Testing your own code
 
