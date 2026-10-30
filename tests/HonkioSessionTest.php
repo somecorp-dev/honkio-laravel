@@ -7,8 +7,13 @@ namespace Honkio\Laravel\Tests;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
+use Honkio\Auth\HonkioAuth;
+use Honkio\Auth\RefreshResult;
+use Honkio\Auth\TokenRefresher;
+use Honkio\Laravel\Auth\HonkioGuard;
 use Honkio\Laravel\Auth\HonkioSession;
 use Honkio\Laravel\Auth\HonkioUser;
+use Honkio\Laravel\Auth\LaravelCache;
 use Illuminate\Foundation\Auth\User as EloquentUser;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -161,6 +166,75 @@ class HonkioSessionTest extends TestCase
             'https://login.example.ca/logout?client_id=hka_client_1&id_token_hint=old.id.token&post_logout_redirect_uri=https%3A%2F%2Fapp.example.ca%2F',
             $url,
         );
+    }
+
+    public function test_a_429_keeps_the_tokens_for_the_request_without_calling_it_an_outage(): void
+    {
+        $this->fakeIssuer($this->issuer->discovery(), AuthFixture::json(['error' => 'temporarily_unavailable'], 429));
+        $this->withSession($this->signedIn(60))->get('/private')->assertOk()->assertSeeText('ok');
+        $this->assertSame('hka_rt_old', session(HonkioSession::SESSION_KEY)['tokens']['refresh_token']);
+    }
+
+    /** A HonkioSession for this request, over the test's session store, as the service provider builds it. */
+    private function honkioSession(): HonkioSession
+    {
+        return new HonkioSession($this->app->make(HonkioAuth::class), $this->app['session.store'], $this->app->make(LaravelCache::class));
+    }
+
+    /** Puts the old (expired) tokens in the session, as a request that loaded it before another refreshed would see it. */
+    private function staleCopy(): void
+    {
+        $this->app['session.store']->put(HonkioSession::SESSION_KEY, $this->signedIn(60)[HonkioSession::SESSION_KEY]);
+    }
+
+    public function test_a_request_that_waited_on_a_refresh_in_its_session_uses_the_new_tokens(): void
+    {
+        $this->fakeIssuer($this->issuer->discovery(), $this->issuer->tokenResponse(), $this->issuer->jwks());
+        $this->staleCopy();
+        $first = $this->honkioSession()->ensureFresh();
+        $this->assertSame(RefreshResult::REFRESHED, $first?->status);
+
+        // A second request in the same session, still holding the old tokens: Honkio isn't asked again.
+        $this->staleCopy();
+        $second = $this->honkioSession()->ensureFresh();
+
+        $this->assertSame(RefreshResult::REFRESHED, $second?->status);
+        $this->assertSame($first->tokens?->toArray(), $second->tokens?->toArray());
+        $this->assertSame('hka_rt_new', session(HonkioSession::SESSION_KEY)['tokens']['refresh_token']);
+        $this->assertCount(3, $this->issuerHistory, 'the old refresh token was sent once');
+    }
+
+    public function test_another_session_with_the_old_refresh_token_does_not_get_the_new_tokens(): void
+    {
+        $this->fakeIssuer($this->issuer->discovery(), $this->issuer->tokenResponse(), $this->issuer->jwks(), AuthFixture::json(['error' => 'invalid_grant'], 400));
+        $this->staleCopy();
+        $this->assertSame(RefreshResult::REFRESHED, $this->honkioSession()->ensureFresh()?->status);
+
+        $this->app['session.store']->setId(null); // a new session id
+        $this->staleCopy();
+        $replay = $this->honkioSession()->ensureFresh();
+
+        $this->assertSame(RefreshResult::ENDED, $replay?->status, 'the replayed token went to Honkio, which refused it');
+        $this->assertCount(4, $this->issuerHistory);
+    }
+
+    public function test_signing_out_deletes_the_sessions_last_refresh(): void
+    {
+        $this->fakeIssuer($this->issuer->discovery(), $this->issuer->tokenResponse(), $this->issuer->jwks(), AuthFixture::json(['error' => 'invalid_grant'], 400));
+        $this->staleCopy();
+        $session = $this->honkioSession();
+        $this->assertSame(RefreshResult::REFRESHED, $session->ensureFresh()?->status);
+        (new HonkioGuard($session))->logout();
+
+        $this->staleCopy();
+        $this->assertSame(RefreshResult::ENDED, $this->honkioSession()->ensureFresh()?->status);
+        $this->assertCount(4, $this->issuerHistory);
+    }
+
+    public function test_the_bound_client_leaves_the_token_keyed_refresh_memo_off(): void
+    {
+        $refresher = (new \ReflectionProperty(HonkioAuth::class, 'refresher'))->getValue($this->app->make(HonkioAuth::class));
+        $this->assertFalse((new \ReflectionProperty(TokenRefresher::class, 'remember'))->getValue($refresher));
     }
 
     public function test_tokens_never_reach_a_cookie(): void

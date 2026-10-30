@@ -96,6 +96,8 @@ class HonkioServiceProvider extends ServiceProvider
                 'client_id' => $settings['client_id'],
                 'client_secret' => $settings['client_secret'],
                 'cache' => $app->make(LaravelCache::class),
+                // HonkioSession serialises refreshes per session and shares the result with that session only.
+                'remember_refreshes' => false,
             ]);
         });
 
