@@ -9,7 +9,9 @@ use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7\Response;
+use Honkio\Auth\HonkioAuth;
 use Honkio\Honkio;
+use Honkio\Laravel\Auth\LaravelCache;
 use Honkio\Laravel\HonkioServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
 use Psr\Http\Message\RequestInterface;
@@ -33,6 +35,36 @@ abstract class TestCase extends Orchestra
         $app['config']->set('mail.default', 'honkio');
         $app['config']->set('mail.mailers.honkio', ['transport' => 'honkio']);
         $app['config']->set('mail.from', ['address' => 'hello@example.ca', 'name' => 'Acme']);
+        $app['config']->set('app.key', 'base64:' . base64_encode(str_repeat('k', 32)));
+        $app['config']->set('cache.default', 'array');
+        $app['config']->set('session.driver', 'array');
+        $app['config']->set('honkio.auth.issuer', AuthFixture::ISSUER);
+        $app['config']->set('honkio.auth.client_id', AuthFixture::CLIENT_ID);
+        $app['config']->set('honkio.auth.client_secret', 'shh');
+        $app['config']->set('honkio.auth.redirect', 'https://app.example.ca/auth/honkio/callback');
+    }
+
+    /** @var list<array{request: RequestInterface}> */
+    protected array $issuerHistory = [];
+
+    /**
+     * Binds a HonkioAuth for the configured app whose HTTP calls (discovery,
+     * keys, refresh) are answered in order from $responses.
+     */
+    protected function fakeIssuer(Response|\Throwable ...$responses): void
+    {
+        $this->issuerHistory = [];
+        $stack = HandlerStack::create(new MockHandler($responses));
+        $stack->push(Middleware::history($this->issuerHistory));
+        $this->app->instance(HonkioAuth::class, new HonkioAuth([
+            'issuer' => AuthFixture::ISSUER,
+            'client_id' => AuthFixture::CLIENT_ID,
+            'client_secret' => 'shh',
+            'http_client' => new Client(['handler' => $stack]),
+            'cache' => $this->app->make(LaravelCache::class),
+        ]));
+        $this->app->forgetScopedInstances();
+        $this->app['auth']->forgetGuards();
     }
 
     /** Bind a real SDK client whose HTTP layer is a recording mock. */

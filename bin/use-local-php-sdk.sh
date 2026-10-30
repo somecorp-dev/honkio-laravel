@@ -3,4 +3,4 @@
 # Idempotent. Modifies composer.json locally: do not commit that change.
 set -eu
 cd "$(dirname "$0")/.."
-composer config repositories.honkio-php '{"type":"path","url":"../php","options":{"symlink":true,"versions":{"honkio/honkio-php":"0.2.0"}}}'
+composer config repositories.honkio-php '{"type":"path","url":"../php","options":{"symlink":true,"versions":{"honkio/honkio-php":"0.3.0"}}}'

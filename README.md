@@ -1,6 +1,6 @@
 # honkio/laravel
 
-[HonkIO](https://honkio.ca) for Laravel: a mail transport and an SMS notification channel on top of [`honkio/honkio-php`](https://honkio.ca/docs/sdk). Canadian SMS and email, with CASL built in. Data is stored in Canada (ca-central-1).
+[HonkIO](https://honkio.ca) for Laravel: a mail transport, an SMS notification channel and Honkio Auth sign-in on top of [`honkio/honkio-php`](https://honkio.ca/docs/sdk). Canadian SMS and email, with CASL built in. Data is stored in Canada (ca-central-1).
 
 - PHP 8.2 or newer, Laravel 12 or 13 (auto-discovered, no manual provider registration)
 - The client retries what waiting fixes (a number's per-minute sending rate, the carrier asking to slow down), at most 2 times by default, with an idempotency key so its retries never send twice; see [Retries](#retries). Notifications carry an idempotency key derived from the notification, so a retried queued job cannot send or charge twice either. Queued mail is not deduplicated across job retries: each send gets a new generated key, so a job retried after a timeout can send twice.
@@ -109,6 +109,55 @@ Honkio::sendLimit()->get(); // the daily cap and usage, and each number's carrie
 ```
 
 `Honkio\Honkio` is bound as a singleton, so you can also type-hint it. See the [PHP SDK](https://honkio.ca/docs/sdk) for every resource.
+
+## Signing users in with Honkio Auth (not available yet)
+
+Honkio Auth is hosted, passwordless sign-in (email code or link, text code, passkeys) on a hostname you own, with users stored in Canada. It is not available yet. Create an app in the dashboard, publish its DNS records, and add your callback URL to its redirect URIs. Then:
+
+```sh
+composer require laravel/socialite
+```
+
+```dotenv
+HONKIO_AUTH_ISSUER=https://login.example.ca
+HONKIO_AUTH_CLIENT_ID=...
+HONKIO_AUTH_CLIENT_SECRET=...   # leave empty for a public client
+HONKIO_AUTH_REDIRECT_URI=/auth/honkio/callback
+```
+
+```php
+use Honkio\Laravel\Auth\HonkioSession;
+use Laravel\Socialite\Facades\Socialite;
+
+Route::get('/login', fn () => Socialite::driver('honkio')->redirect())->name('login');
+
+Route::get('/auth/honkio/callback', function (HonkioSession $session) {
+    $user = Socialite::driver('honkio')->user(); // tokens checked: issuer, audience, signature, nonce
+    $session->login($user);                       // keeps the tokens in the session, server-side
+    // With your own users table, also: Auth::login(User::firstOrCreate(['honkio_id' => $user->getId()], [...]));
+    return redirect()->intended('/');
+});
+
+Route::middleware('honkio.auth')->group(function () {
+    Route::get('/account', fn () => view('account'));
+});
+
+Route::post('/logout', function (HonkioSession $session) {
+    $url = $session->logoutUrl(url('/')); // signs out of the hosted page too
+    $session->forget();
+    return $url ? redirect()->away($url) : redirect('/');
+});
+```
+
+Without a users table of your own, use the `honkio` guard instead of `honkio.auth`: `Route::middleware('auth:honkio')`, and `Auth::guard('honkio')->user()` is a `Honkio\Laravel\Auth\HonkioUser` with the ID token's claims (`sub`, `email`, `org_id`, `org_role`, ...).
+
+**Outages.** Users already signed in stay signed in while Honkio is down: once their access token (10 minutes) expires, the middleware and guard try to refresh it, and if Honkio can't be reached (a connection error, a timeout, a 5xx or a 429) they let the request through on the old tokens, with `$request->attributes->get('honkio_auth_offline')` set, for at most 24 hours past the expiry. A refresh Honkio refuses (the session was revoked, the user blocked or deleted, or removed from the organization) signs the user out at once: the tokens are forgotten, the guard named in `HONKIO_AUTH_LOGOUT_GUARD` (your own, such as `web`) is logged out, and the browser is sent to the `login` route (JSON requests get 401). New sign-ins need Honkio to be up.
+
+Refresh tokens rotate and reusing one ends the session, so refreshes take a cache lock per session; use a cache store every worker shares (`HONKIO_AUTH_CACHE_STORE`, Redis or the database) so the lock, and the cached signing keys, are shared. Cached values are encrypted with your app key.
+
+To check bearer tokens in an API, or to manage apps, users and organizations, see the PHP SDK's [Honkio Auth section](https://honkio.ca/docs/sdk): `app(Honkio\Auth\HonkioAuth::class)->verifyAccessToken($token)` uses the same settings, and `Honkio::authApps()` the API key.
+
+For a second app, build another provider: `Socialite::buildProvider(Honkio\Laravel\Socialite\HonkioProvider::class, $config)->forIssuer('https://login.other.ca')`.
 
 ## Retries
 

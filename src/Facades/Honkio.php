@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static \Honkio\Resource\AutoTopup autoTopup()
  * @method static \Honkio\Resource\SendLimit sendLimit()
  * @method static \Honkio\Resource\TopupCapRequests topupCapRequests()
+ * @method static \Honkio\Resource\AuthApps authApps()
  *
  * @see \Honkio\Honkio
  */

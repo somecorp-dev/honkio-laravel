@@ -66,6 +66,27 @@ class ServiceProviderTest extends TestCase
         $this->assertStringEndsWith('config/honkio.php', array_key_first($paths));
     }
 
+    public function test_honkio_auth_settings_are_merged_and_built_on_first_use(): void
+    {
+        $this->assertSame(['openid', 'email'], $this->app['config']->get('honkio.auth.scopes'));
+        $this->assertSame('login', $this->app['config']->get('honkio.auth.login_route'));
+
+        $auth = $this->app->make(\Honkio\Auth\HonkioAuth::class);
+        $this->assertSame('https://login.example.ca', $auth->issuer());
+        $this->assertSame($auth, $this->app->make(\Honkio\Auth\HonkioAuth::class));
+    }
+
+    public function test_booting_without_honkio_auth_settings_does_not_throw(): void
+    {
+        $this->app['config']->set('honkio.auth', []);
+        $this->app->forgetInstance(\Honkio\Auth\HonkioAuth::class);
+        $this->app->register(HonkioServiceProvider::class, true);
+        $this->assertTrue($this->app->isBooted());
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->app->make(\Honkio\Auth\HonkioAuth::class);
+    }
+
     public function test_retry_settings_reach_the_client(): void
     {
         $this->assertSame(2, $this->app['config']->get('honkio.max_retries'));
