@@ -16,10 +16,10 @@ use Illuminate\Routing\Router;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * `honkio.auth`: the route needs a live Honkio Auth session. It applies the
- * outage-tolerant refresh rule: while Honkio can't be reached the request
+ * `honkio.auth`: the route needs a live HonkIO Auth session. It applies the
+ * outage-tolerant refresh rule: while HonkIO can't be reached the request
  * goes through (and `$request->attributes->get('honkio_auth_offline')` is
- * true); once Honkio refuses the refresh, or has been unreachable for 24
+ * true); once HonkIO refuses the refresh, or has been unreachable for 24
  * hours past the access token's expiry, the tokens are forgotten, the
  * `logout_guard` (if set) is logged out, and the request is answered like
  * Laravel's `auth` middleware: a redirect to `login_route`, or 401 for JSON.

@@ -14,7 +14,7 @@ use Laravel\Socialite\Two\AbstractProvider;
 use Laravel\Socialite\Two\InvalidStateException;
 
 /**
- * The `honkio` Socialite driver: OpenID Connect sign-in with Honkio Auth.
+ * The `honkio` Socialite driver: OpenID Connect sign-in with HonkIO Auth.
  *
  * Every app has its own issuer (`https://` plus the app's hostname); the
  * endpoints come from its discovery document. The flow is authorization code

@@ -9,7 +9,7 @@ use Laravel\Socialite\Two\User;
 
 /**
  * What Socialite::driver('honkio')->user() returns: Socialite's user (id is
- * the Honkio user id, `sub`), plus the verified ID token claims, the ID token
+ * the HonkIO user id, `sub`), plus the verified ID token claims, the ID token
  * and the token set to keep with HonkioSession::login().
  */
 class HonkioUser extends User

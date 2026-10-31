@@ -10,7 +10,7 @@ use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Contracts\Encryption\Encrypter;
 
 /**
- * Honkio Auth's discovery, key and refresh cache on a Laravel cache store,
+ * HonkIO Auth's discovery, key and refresh cache on a Laravel cache store,
  * shared by every worker. Values are encrypted with the app key: each
  * session's last refresh is held here, tokens included, for 30 seconds
  * (see HonkioSession).

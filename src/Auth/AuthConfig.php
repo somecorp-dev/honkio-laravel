@@ -7,7 +7,7 @@ namespace Honkio\Laravel\Auth;
 use Illuminate\Contracts\Config\Repository;
 
 /**
- * The Honkio Auth settings: config('honkio.auth'), with any value set in
+ * The HonkIO Auth settings: config('honkio.auth'), with any value set in
  * config('services.honkio') (the Socialite convention) taking precedence.
  *
  * @internal

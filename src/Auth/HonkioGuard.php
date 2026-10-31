@@ -9,7 +9,7 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Guard;
 
 /**
- * The `honkio` auth guard: the user is whoever signed in through Honkio Auth
+ * The `honkio` auth guard: the user is whoever signed in through HonkIO Auth
  * in this session, after the outage-tolerant refresh rule (see
  * {@see HonkioSession}). Use it as `auth:honkio` when your app keeps no users
  * table of its own; it is registered as auth.guards.honkio unless you define
@@ -46,14 +46,14 @@ class HonkioGuard implements Guard
         return false;
     }
 
-    /** Signs out: forgets the Honkio tokens for this session and revokes the refresh token at Honkio. */
+    /** Signs out: forgets the HonkIO tokens for this session and revokes the refresh token at HonkIO. */
     public function logout(): void
     {
         $this->session->forget();
         $this->user = null;
     }
 
-    /** True when this request runs on kept tokens because Honkio can't be reached. */
+    /** True when this request runs on kept tokens because HonkIO can't be reached. */
     public function offline(): bool
     {
         return $this->session->offline();

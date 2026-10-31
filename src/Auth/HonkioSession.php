@@ -16,13 +16,13 @@ use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Contracts\Session\Session;
 
 /**
- * The signed-in user's Honkio Auth tokens, kept in the Laravel session (never
+ * The signed-in user's HonkIO Auth tokens, kept in the Laravel session (never
  * in a cookie the browser can read), and the outage-tolerant refresh rule
  * applied to them once per request:
  *
- * - while Honkio can't be reached the user stays signed in, for at most 24
+ * - while HonkIO can't be reached the user stays signed in, for at most 24
  *   hours past the access token's expiry;
- * - a refresh Honkio refuses (revoked, blocked, deleted, removed from the
+ * - a refresh HonkIO refuses (revoked, blocked, deleted, removed from the
  *   organization) signs them out at once.
  *
  * Refreshes are serialised per session with a cache lock (when the cache
@@ -32,7 +32,7 @@ use Illuminate\Contracts\Session\Session;
  * of the session yet: after the lock it reads them from this session's entry
  * in the cache, which holds the last refresh for {@see REFRESH_SECONDS},
  * answers only this session id and the refresh token it replaced, and is
- * deleted on forget(), which also revokes the refresh token at Honkio.
+ * deleted on forget(), which also revokes the refresh token at HonkIO.
  */
 class HonkioSession
 {
@@ -124,7 +124,7 @@ class HonkioSession
         return $this->result = $result;
     }
 
-    /** True when this request is running on kept tokens because Honkio can't be reached. */
+    /** True when this request is running on kept tokens because HonkIO can't be reached. */
     public function offline(): bool
     {
         return $this->result !== null && $this->result->isOffline();
@@ -132,10 +132,10 @@ class HonkioSession
 
     /**
      * Signs the user out: forgets the tokens and this session's last refresh,
-     * then revokes the refresh token at Honkio ({@see HonkioAuth::revoke()}),
+     * then revokes the refresh token at HonkIO ({@see HonkioAuth::revoke()}),
      * which also deletes its refresh memo, so neither the token nor a request
      * still holding the one it replaced can bring the session back. When
-     * Honkio can't be reached or refuses, the tokens are forgotten anyway.
+     * HonkIO can't be reached or refuses, the tokens are forgotten anyway.
      * Call logoutUrl() first to end the hosted session too.
      */
     public function forget(): void
@@ -154,7 +154,7 @@ class HonkioSession
 
     /**
      * Where to send the browser to sign out of the hosted page as well, with
-     * the stored ID token as the hint. Null when Honkio can't be reached.
+     * the stored ID token as the hint. Null when HonkIO can't be reached.
      */
     public function logoutUrl(?string $postLogoutRedirectUri = null, ?string $state = null): ?string
     {
@@ -165,7 +165,7 @@ class HonkioSession
         }
     }
 
-    /** Forgets the tokens and this session's last refresh, without calling Honkio. */
+    /** Forgets the tokens and this session's last refresh, without calling HonkIO. */
     private function clear(): void
     {
         $this->cache?->store()->forget($this->refreshKey());

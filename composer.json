@@ -1,6 +1,6 @@
 {
     "name": "honkio/laravel",
-    "description": "Laravel mail transport, SMS notification channel and Honkio Auth sign-in (Socialite provider, guard and middleware) for HonkIO: Canadian SMS and email, CASL built in.",
+    "description": "Laravel mail transport, SMS notification channel and HonkIO Auth sign-in (Socialite provider, guard and middleware) for HonkIO: Canadian SMS and email, CASL built in.",
     "type": "library",
     "license": "MIT",
     "keywords": ["laravel", "sms", "email", "mail", "notifications", "socialite", "oidc", "honkio", "casl", "canada"],
@@ -19,7 +19,7 @@
         "symfony/mailer": "^7.2 || ^8.0"
     },
     "suggest": {
-        "laravel/socialite": "For the honkio Socialite driver (Honkio Auth sign-in)."
+        "laravel/socialite": "For the honkio Socialite driver (HonkIO Auth sign-in)."
     },
     "require-dev": {
         "laravel/socialite": "^5.25",

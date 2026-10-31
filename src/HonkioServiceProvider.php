@@ -70,10 +70,10 @@ class HonkioServiceProvider extends ServiceProvider
     }
 
     /**
-     * Honkio Auth: the token checker and refresher for the configured app, the
+     * HonkIO Auth: the token checker and refresher for the configured app, the
      * session helper, the `honkio` guard driver and, when Socialite is
      * installed, the `honkio` Socialite driver. All of it is built on first
-     * use, so an app that doesn't sign users in with Honkio needs no settings.
+     * use, so an app that doesn't sign users in with HonkIO needs no settings.
      */
     private function registerAuth(): void
     {
