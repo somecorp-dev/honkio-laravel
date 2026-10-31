@@ -110,9 +110,9 @@ Honkio::sendLimit()->get(); // the daily cap and usage, and each number's carrie
 
 `Honkio\Honkio` is bound as a singleton, so you can also type-hint it. See the [PHP SDK](https://honkio.ca/docs/sdk) for every resource.
 
-## Signing users in with HonkIO Auth (not available yet)
+## Signing users in with HonkIO Auth
 
-HonkIO Auth is hosted, passwordless sign-in (email code or link, text code, passkeys) on a hostname you own, with users stored in Canada. It is not available yet. Create an app in the dashboard, publish its DNS records, and add your callback URL to its redirect URIs. Then:
+HonkIO Auth is hosted, passwordless sign-in (email code or link, text code, passkeys) on a hostname you own, with users stored in Canada. Create an app in the dashboard, publish its DNS records, and add your callback URL to its redirect URIs. Then:
 
 ```sh
 composer require laravel/socialite
