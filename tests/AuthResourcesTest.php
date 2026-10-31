@@ -39,6 +39,32 @@ class AuthResourcesTest extends TestCase
         $this->assertSame('/v1/auth-apps/app_1/users/usr_1/passkeys/pk_1', $this->history[1]['request']->getUri()->getPath());
     }
 
+    public function test_the_facade_moves_an_app_to_a_new_hostname_and_cancels_the_move(): void
+    {
+        $moving = ['id' => 'app_1', 'hostname' => 'login.acme.ca', 'pending_hostname' => 'auth.acme.ca'];
+        $this->fakeApi($this->apiJson($moving), $this->apiJson(['id' => 'app_1', 'pending_hostname' => null]));
+
+        $this->assertSame($moving, HonkioFacade::authApps()->update('app_1', ['hostname' => 'auth.acme.ca']));
+        $this->assertNull(HonkioFacade::authApps()->cancelHostnameChange('app_1')['pending_hostname']);
+
+        $this->assertSame('PATCH', $this->history[0]['request']->getMethod());
+        $this->assertSame(['hostname' => 'auth.acme.ca'], $this->sentBody(0));
+        $this->assertSame('DELETE', $this->history[1]['request']->getMethod());
+        $this->assertSame('/v1/auth-apps/app_1/hostname-change', $this->history[1]['request']->getUri()->getPath());
+    }
+
+    public function test_the_facade_reads_the_latest_export_with_the_step_up(): void
+    {
+        $ready = ['id' => 'aex_1', 'status' => 'ready', 'download_url' => 'https://api.honkio.ca/v1/auth-exports/tok_2'];
+        $this->fakeApi($this->apiJson($ready));
+
+        $this->assertSame($ready, HonkioFacade::authApps()->exports->latest('app_1', 'su_1'));
+
+        $this->assertSame('GET', $this->history[0]['request']->getMethod());
+        $this->assertSame('/v1/auth-apps/app_1/exports/latest', $this->history[0]['request']->getUri()->getPath());
+        $this->assertSame('su_1', $this->history[0]['request']->getHeaderLine('X-Step-Up-Token'));
+    }
+
     public function test_the_laravel_cache_deletes_entries(): void
     {
         $cache = $this->app->make(LaravelCache::class);
