@@ -47,9 +47,12 @@ abstract class TestCase extends Orchestra
     /** @var list<array{request: RequestInterface}> */
     protected array $issuerHistory = [];
 
+    /** Whether fakeIssuer() turns the token-keyed refresh memo on (the service provider leaves it off). */
+    protected bool $issuerRemembersRefreshes = false;
+
     /**
      * Binds a HonkioAuth for the configured app whose HTTP calls (discovery,
-     * keys, refresh) are answered in order from $responses.
+     * keys, refresh, revoke) are answered in order from $responses.
      */
     protected function fakeIssuer(Response|\Throwable ...$responses): void
     {
@@ -62,7 +65,7 @@ abstract class TestCase extends Orchestra
             'client_secret' => 'shh',
             'http_client' => new Client(['handler' => $stack]),
             'cache' => $this->app->make(LaravelCache::class),
-            'remember_refreshes' => false, // as the service provider binds it
+            'remember_refreshes' => $this->issuerRemembersRefreshes, // false as the service provider binds it
         ]));
         $this->app->forgetScopedInstances();
         $this->app['auth']->forgetGuards();

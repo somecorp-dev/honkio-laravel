@@ -32,7 +32,7 @@ use Illuminate\Contracts\Session\Session;
  * of the session yet: after the lock it reads them from this session's entry
  * in the cache, which holds the last refresh for {@see REFRESH_SECONDS},
  * answers only this session id and the refresh token it replaced, and is
- * deleted on forget().
+ * deleted on forget(), which also revokes the refresh token at Honkio.
  */
 class HonkioSession
 {
@@ -117,7 +117,8 @@ class HonkioSession
         if ($result->changed() && $result->tokens !== null) {
             $this->store($result->tokens, $this->claimsFor($result->tokens));
         } elseif (!$result->isActive()) {
-            $this->forget();
+            // Honkio refused the token (nothing left to revoke) or can't be reached: forget it locally.
+            $this->clear();
         }
 
         return $this->result = $result;
@@ -129,12 +130,26 @@ class HonkioSession
         return $this->result !== null && $this->result->isOffline();
     }
 
-    /** Forgets the tokens (sign-out on your side). Call logoutUrl() first to end the hosted session too. */
+    /**
+     * Signs the user out: forgets the tokens and this session's last refresh,
+     * then revokes the refresh token at Honkio ({@see HonkioAuth::revoke()}),
+     * which also deletes its refresh memo, so neither the token nor a request
+     * still holding the one it replaced can bring the session back. When
+     * Honkio can't be reached or refuses, the tokens are forgotten anyway.
+     * Call logoutUrl() first to end the hosted session too.
+     */
     public function forget(): void
     {
-        $this->cache?->store()->forget($this->refreshKey());
-        $this->session->forget(self::SESSION_KEY);
-        $this->result = null;
+        $refreshToken = $this->tokens()?->refreshToken;
+        $this->clear();
+        if ($refreshToken === null || $refreshToken === '') {
+            return;
+        }
+        try {
+            $this->auth->revoke($refreshToken);
+        } catch (HonkioException) {
+            // Signed out here regardless; the refresh token expires on its own.
+        }
     }
 
     /**
@@ -148,6 +163,14 @@ class HonkioSession
         } catch (HonkioException) {
             return null;
         }
+    }
+
+    /** Forgets the tokens and this session's last refresh, without calling Honkio. */
+    private function clear(): void
+    {
+        $this->cache?->store()->forget($this->refreshKey());
+        $this->session->forget(self::SESSION_KEY);
+        $this->result = null;
     }
 
     private function refreshLocked(TokenSet $tokens): RefreshResult

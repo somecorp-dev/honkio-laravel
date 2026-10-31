@@ -144,10 +144,12 @@ Route::middleware('honkio.auth')->group(function () {
 
 Route::post('/logout', function (HonkioSession $session) {
     $url = $session->logoutUrl(url('/')); // signs out of the hosted page too
-    $session->forget();
+    $session->forget();                   // forgets the tokens and revokes the refresh token at Honkio
     return $url ? redirect()->away($url) : redirect('/');
 });
 ```
+
+`forget()` (and `Auth::guard('honkio')->logout()`) revokes the refresh token at Honkio, so it can't be used again, and forgets the tokens even when Honkio can't be reached.
 
 Without a users table of your own, use the `honkio` guard instead of `honkio.auth`: `Route::middleware('auth:honkio')`, and `Auth::guard('honkio')->user()` is a `Honkio\Laravel\Auth\HonkioUser` with the ID token's claims (`sub`, `email`, `org_id`, `org_role`, ...).
 
@@ -155,7 +157,7 @@ Without a users table of your own, use the `honkio` guard instead of `honkio.aut
 
 Refresh tokens rotate and reusing one ends the session, so refreshes take a cache lock per session, and a request that waited on another's refresh reads the new tokens from that session's entry in the cache (kept 30 seconds, readable only with the same session id, deleted at sign-out). Use a cache store every worker shares (`HONKIO_AUTH_CACHE_STORE`, Redis or the database) so the lock, that entry and the cached signing keys are shared. Cached values are encrypted with your app key.
 
-To check bearer tokens in an API, or to manage apps, users and organizations, see the PHP SDK's [Honkio Auth section](https://honkio.ca/docs/sdk): `app(Honkio\Auth\HonkioAuth::class)->verifyAccessToken($token)` uses the same settings, and `Honkio::authApps()` the API key. For example, `Honkio::authApps()->users->passkeys($appId, $userId)` lists a user's passkeys and `Honkio::authApps()->users->removePasskey($appId, $userId, $passkeyId)` removes one (the user is told, and their sessions end).
+To check bearer tokens in an API, or to manage apps, users and organizations, see the PHP SDK's [Honkio Auth section](https://honkio.ca/docs/sdk): `app(Honkio\Auth\HonkioAuth::class)->verifyAccessToken($token)` uses the same settings, and `Honkio::authApps()` the API key. For example, `Honkio::authApps()->users->passkeys($appId, $userId)` lists a user's passkeys and `Honkio::authApps()->users->removePasskey($appId, $userId, $passkeyId)` removes one (the user is told, and their sessions end). `Honkio::authApps()->update($appId, ['hostname' => 'auth.example.ca'])` moves an app to a new hostname once its records are proven (`cancelHostnameChange($appId)` drops the move), and `Honkio::authApps()->exports->latest($appId, $stepUpToken)` reads the newest export, with a fresh download link for the key that requested it.
 
 For a second app, build another provider: `Socialite::buildProvider(Honkio\Laravel\Socialite\HonkioProvider::class, $config)->forIssuer('https://login.other.ca')`.
 

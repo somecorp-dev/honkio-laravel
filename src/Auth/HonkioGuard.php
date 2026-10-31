@@ -46,7 +46,7 @@ class HonkioGuard implements Guard
         return false;
     }
 
-    /** Forgets the Honkio tokens for this session. */
+    /** Signs out: forgets the Honkio tokens for this session and revokes the refresh token at Honkio. */
     public function logout(): void
     {
         $this->session->forget();

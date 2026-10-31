@@ -10,6 +10,7 @@ use GuzzleHttp\Psr7\Response;
 use Honkio\Auth\HonkioAuth;
 use Honkio\Auth\RefreshResult;
 use Honkio\Auth\TokenRefresher;
+use Honkio\Auth\TokenSet;
 use Honkio\Laravel\Auth\HonkioGuard;
 use Honkio\Laravel\Auth\HonkioSession;
 use Honkio\Laravel\Auth\HonkioUser;
@@ -117,6 +118,7 @@ class HonkioSessionTest extends TestCase
         $this->fakeIssuer($this->issuer->discovery(), AuthFixture::json(['error' => 'invalid_grant'], 400));
         $this->withSession($this->signedIn(5))->get('/private')->assertRedirect('/login');
         $this->assertNull(session(HonkioSession::SESSION_KEY));
+        $this->assertCount(2, $this->issuerHistory, 'a token Honkio refused is not revoked again');
     }
 
     public function test_a_refused_refresh_also_logs_out_the_logout_guard(): void
@@ -220,7 +222,7 @@ class HonkioSessionTest extends TestCase
 
     public function test_signing_out_deletes_the_sessions_last_refresh(): void
     {
-        $this->fakeIssuer($this->issuer->discovery(), $this->issuer->tokenResponse(), $this->issuer->jwks(), AuthFixture::json(['error' => 'invalid_grant'], 400));
+        $this->fakeIssuer($this->issuer->discovery(), $this->issuer->tokenResponse(), $this->issuer->jwks(), new Response(200), AuthFixture::json(['error' => 'invalid_grant'], 400));
         $this->staleCopy();
         $session = $this->honkioSession();
         $this->assertSame(RefreshResult::REFRESHED, $session->ensureFresh()?->status);
@@ -228,7 +230,64 @@ class HonkioSessionTest extends TestCase
 
         $this->staleCopy();
         $this->assertSame(RefreshResult::ENDED, $this->honkioSession()->ensureFresh()?->status);
-        $this->assertCount(4, $this->issuerHistory);
+        $this->assertCount(5, $this->issuerHistory);
+    }
+
+    public function test_signing_out_revokes_the_refresh_token_at_honkio(): void
+    {
+        $this->fakeIssuer($this->issuer->discovery(), new Response(200));
+        $this->app['session.store']->put(HonkioSession::SESSION_KEY, $this->signedIn(-300)[HonkioSession::SESSION_KEY]);
+
+        $this->honkioSession()->forget();
+
+        $this->assertNull(session(HonkioSession::SESSION_KEY));
+        $this->assertCount(2, $this->issuerHistory);
+        $revoke = $this->issuerHistory[1]['request'];
+        $this->assertSame('POST', $revoke->getMethod());
+        $this->assertSame(AuthFixture::ISSUER . '/revoke', (string) $revoke->getUri());
+        parse_str((string) $revoke->getBody(), $form);
+        $this->assertSame(['token' => 'hka_rt_old', 'token_type_hint' => 'refresh_token'], array_intersect_key($form, ['token' => 1, 'token_type_hint' => 1]));
+    }
+
+    public function test_signing_out_purges_the_refresh_memo_so_the_replaced_token_gets_nothing(): void
+    {
+        // With the token-keyed memo on, a request still holding the replaced
+        // refresh token would be handed the new tokens for a few seconds;
+        // revoking at sign-out deletes that memo too.
+        $this->issuerRemembersRefreshes = true;
+        $this->fakeIssuer($this->issuer->discovery(), $this->issuer->tokenResponse(), $this->issuer->jwks(), new Response(200), AuthFixture::json(['error' => 'invalid_grant'], 400));
+        $this->staleCopy();
+        $session = $this->honkioSession();
+        $this->assertSame(RefreshResult::REFRESHED, $session->ensureFresh()?->status);
+        $session->forget();
+
+        $this->assertSame(RefreshResult::ENDED, $this->app->make(HonkioAuth::class)->refresh(
+            TokenSet::fromArray($this->signedIn(60)[HonkioSession::SESSION_KEY]['tokens']),
+        )->status);
+        $this->assertCount(5, $this->issuerHistory, 'the replaced token went to Honkio, which refused it');
+    }
+
+    public function test_signing_out_while_honkio_is_unreachable_still_forgets_the_tokens(): void
+    {
+        $this->fakeIssuer($this->down(), $this->down());
+        $this->app['session.store']->put(HonkioSession::SESSION_KEY, $this->signedIn(-300)[HonkioSession::SESSION_KEY]);
+
+        $this->honkioSession()->forget();
+
+        $this->assertNull(session(HonkioSession::SESSION_KEY));
+    }
+
+    public function test_signing_out_with_no_refresh_token_calls_nothing(): void
+    {
+        $this->fakeIssuer();
+        $signedIn = $this->signedIn(-300)[HonkioSession::SESSION_KEY];
+        $signedIn['tokens']['refresh_token'] = null;
+        $this->app['session.store']->put(HonkioSession::SESSION_KEY, $signedIn);
+
+        $this->honkioSession()->forget();
+
+        $this->assertNull(session(HonkioSession::SESSION_KEY));
+        $this->assertCount(0, $this->issuerHistory);
     }
 
     public function test_the_bound_client_leaves_the_token_keyed_refresh_memo_off(): void
