@@ -48,6 +48,23 @@ class HonkioProvider extends AbstractProvider
 
     private ?Cache $authCache = null;
 
+    /**
+     * var_dump and print_r show the app, never the client secret (Socialite
+     * keeps it in a plain property) or the request and its session.
+     *
+     * @return array<string, mixed>
+     */
+    public function __debugInfo(): array
+    {
+        return [
+            'issuer' => $this->issuer,
+            'clientId' => $this->clientId,
+            'clientSecret' => (string) $this->clientSecret === '' ? null : '[redacted]',
+            'redirectUrl' => $this->redirectUrl,
+            'scopes' => $this->scopes,
+        ];
+    }
+
     /** Sets the app's issuer; the provider's HTTP client and the given cache are used for discovery and keys. */
     public function forIssuer(string $issuer, ?Cache $cache = null): static
     {

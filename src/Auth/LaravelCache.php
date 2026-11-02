@@ -23,6 +23,16 @@ final class LaravelCache implements DeletableCache
     ) {
     }
 
+    /**
+     * var_dump and print_r leave out the encrypter, which holds the app key.
+     *
+     * @return array<string, mixed>
+     */
+    public function __debugInfo(): array
+    {
+        return ['store' => $this->store::class, 'encrypter' => '[redacted]'];
+    }
+
     public function store(): Repository
     {
         return $this->store;

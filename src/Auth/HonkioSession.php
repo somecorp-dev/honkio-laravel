@@ -51,6 +51,17 @@ class HonkioSession
     }
 
     /**
+     * var_dump and print_r show the app, never the session store (which
+     * holds the user's tokens) or the cache.
+     *
+     * @return array<string, mixed>
+     */
+    public function __debugInfo(): array
+    {
+        return ['auth' => $this->auth];
+    }
+
+    /**
      * Keeps a freshly signed-in user's tokens and claims, and gives the
      * session a new id (as Auth::login does) so a fixed session id can't be
      * carried across sign-in.

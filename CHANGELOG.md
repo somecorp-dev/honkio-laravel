@@ -2,6 +2,14 @@
 
 Versions are published to Packagist from a read-only mirror by hand; a version without a date is not published yet.
 
+## 0.3.1
+
+Requires `honkio/honkio-php` ^0.3.1.
+
+### Security
+
+- `var_dump` and `print_r` no longer show a secret from what the package builds. The `Honkio` client and the mail transport show `[redacted]` for the API key (through `honkio/honkio-php` 0.3.1). The `honkio` Socialite driver shows `[redacted]` for the client secret, which Socialite keeps in a plain property, and leaves out the request. `HonkioSession` leaves out the session store, which holds the user's tokens. `LaravelCache` leaves out the encrypter, which holds the app key.
+
 ## 0.3.0 (2026-10-31)
 
 Requires `honkio/honkio-php` ^0.3.
