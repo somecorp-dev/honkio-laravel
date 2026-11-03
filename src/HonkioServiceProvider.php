@@ -13,6 +13,7 @@ use Honkio\Laravel\Auth\LaravelCache;
 use Honkio\Laravel\Http\Middleware\EnsureHonkioSession;
 use Honkio\Laravel\Mail\HonkioTransport;
 use Honkio\Laravel\Notifications\HonkioChannel;
+use Honkio\Laravel\Notifications\HonkioPushChannel;
 use Honkio\Laravel\Socialite\HonkioProvider;
 use Illuminate\Auth\AuthManager;
 use Illuminate\Contracts\Foundation\Application;
@@ -57,6 +58,7 @@ class HonkioServiceProvider extends ServiceProvider
 
         $this->callAfterResolving(ChannelManager::class, function (ChannelManager $manager): void {
             $manager->extend('honkio', fn ($app) => $app->make(HonkioChannel::class));
+            $manager->extend('honkio-push', fn ($app) => $app->make(HonkioPushChannel::class));
         });
     }
 
