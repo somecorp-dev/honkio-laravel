@@ -76,7 +76,7 @@ final class HonkioPushMessage
 
     /**
      * A newer push with the same key replaces an older one not yet shown
-     * (APNs apns-collapse-id, FCM collapse_key). At most 64 bytes.
+     * (APNs apns-collapse-id, FCM collapse_key). 1 to 64 visible ASCII characters, no spaces.
      */
     public function collapseKey(string $collapseKey): self
     {
