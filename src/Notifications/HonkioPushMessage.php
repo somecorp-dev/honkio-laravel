@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Honkio\Laravel\Notifications;
 
+use InvalidArgumentException;
+
 final class HonkioPushMessage
 {
     public ?string $appId = null;
@@ -16,6 +18,12 @@ final class HonkioPushMessage
     /** @var array{to: string, from: string, body: string}|null */
     public ?array $fallbackSms = null;
     public ?string $collapseKey = null;
+    public ?int $badge = null;
+    public ?string $sound = null;
+    public ?string $threadId = null;
+    public ?int $ttl = null;
+    /** @var 'high'|'normal'|null */
+    public ?string $priority = null;
 
     public static function create(): self
     {
@@ -81,6 +89,49 @@ final class HonkioPushMessage
     public function collapseKey(string $collapseKey): self
     {
         $this->collapseKey = $collapseKey;
+
+        return $this;
+    }
+
+    /** The iOS badge number to show; 0 clears it. A data-only (background) push carries no badge. */
+    public function badge(int $badge): self
+    {
+        $this->badge = $badge;
+
+        return $this;
+    }
+
+    /** The sound to play: a sound file bundled in the app, or 'default'. A data-only (background) push carries no sound. */
+    public function sound(string $sound): self
+    {
+        $this->sound = $sound;
+
+        return $this;
+    }
+
+    /** Groups notifications: the iOS thread-id and the Android tag. */
+    public function threadId(string $threadId): self
+    {
+        $this->threadId = $threadId;
+
+        return $this;
+    }
+
+    /** Seconds Apple or Google keeps trying to deliver while the device is offline, up to 28 days. 0 means now or never. */
+    public function ttl(int $seconds): self
+    {
+        $this->ttl = $seconds;
+
+        return $this;
+    }
+
+    /** 'high' (the API's default) or 'normal', which lets the device save power and may delay delivery. */
+    public function priority(string $priority): self
+    {
+        if ($priority !== 'high' && $priority !== 'normal') {
+            throw new InvalidArgumentException("A push priority is 'high' or 'normal', not '{$priority}'.");
+        }
+        $this->priority = $priority;
 
         return $this;
     }

@@ -91,6 +91,56 @@ class PushChannelTest extends TestCase
         );
     }
 
+    public function test_badge_sound_thread_ttl_and_priority_are_sent_as_the_api_fields(): void
+    {
+        $this->fakeApi($this->apiJson(['id' => 'ps_4']));
+
+        $this->channel()->send($this->notifiable(), $this->notification(
+            HonkioPushMessage::create()
+                ->app('pa_1')
+                ->title('Reminder')
+                ->badge(3)
+                ->sound('default')
+                ->threadId('appointments')
+                ->ttl(3600)
+                ->priority('normal'),
+        ));
+
+        $this->assertSame(
+            [
+                'app_id' => 'pa_1',
+                'to' => ['user_id' => 'u_7'],
+                'title' => 'Reminder',
+                'badge' => 3,
+                'sound' => 'default',
+                'thread_id' => 'appointments',
+                'ttl' => 3600,
+                'priority' => 'normal',
+            ],
+            $this->sentBody(),
+        );
+    }
+
+    public function test_unset_options_are_left_out_and_a_zero_badge_or_ttl_is_sent(): void
+    {
+        $this->fakeApi($this->apiJson(['id' => 'ps_5']), $this->apiJson(['id' => 'ps_6']));
+
+        $this->channel()->send($this->notifiable(), $this->notification(HonkioPushMessage::create()->app('pa_1')->body('x')));
+        $this->channel()->send($this->notifiable(), $this->notification(HonkioPushMessage::create()->app('pa_1')->body('x')->badge(0)->ttl(0)));
+
+        $this->assertSame(['app_id', 'to', 'body'], array_keys($this->sentBody(0)));
+        $this->assertSame(0, $this->sentBody(1)['badge']);
+        $this->assertSame(0, $this->sentBody(1)['ttl']);
+    }
+
+    public function test_priority_accepts_only_high_or_normal(): void
+    {
+        $this->assertSame('high', HonkioPushMessage::create()->priority('high')->priority);
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("'urgent'");
+        HonkioPushMessage::create()->priority('urgent');
+    }
+
     public function test_to_user_and_to_device_override_the_route(): void
     {
         $this->fakeApi($this->apiJson(['id' => 'ps_2']), $this->apiJson(['id' => 'ps_3']));

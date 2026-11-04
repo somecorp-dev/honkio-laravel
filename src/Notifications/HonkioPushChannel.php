@@ -53,6 +53,21 @@ class HonkioPushChannel
         if ($message->data !== null) {
             $params['data'] = $message->data;
         }
+        if ($message->badge !== null) {
+            $params['badge'] = $message->badge;
+        }
+        if ($message->sound !== null) {
+            $params['sound'] = $message->sound;
+        }
+        if ($message->threadId !== null) {
+            $params['thread_id'] = $message->threadId;
+        }
+        if ($message->ttl !== null) {
+            $params['ttl'] = $message->ttl;
+        }
+        if ($message->priority !== null) {
+            $params['priority'] = $message->priority;
+        }
         if ($message->collapseKey !== null) {
             $params['collapse_key'] = $message->collapseKey;
         }
