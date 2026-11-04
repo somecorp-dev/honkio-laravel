@@ -71,6 +71,7 @@ class PushChannelTest extends TestCase
                 ->title('Shipped')
                 ->body('Your order is on its way')
                 ->data(['orderId' => '42'])
+                ->collapseKey('order-42')
                 ->fallbackSms('+16135550123', '+14165550100', 'Your order shipped'),
         ));
 
@@ -83,6 +84,7 @@ class PushChannelTest extends TestCase
                 'title' => 'Shipped',
                 'body' => 'Your order is on its way',
                 'data' => ['orderId' => '42'],
+                'collapse_key' => 'order-42',
                 'fallback' => ['sms' => ['to' => '+16135550123', 'from' => '+14165550100', 'body' => 'Your order shipped']],
             ],
             $this->sentBody(),

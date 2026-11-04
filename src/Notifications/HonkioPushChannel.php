@@ -53,6 +53,9 @@ class HonkioPushChannel
         if ($message->data !== null) {
             $params['data'] = $message->data;
         }
+        if ($message->collapseKey !== null) {
+            $params['collapse_key'] = $message->collapseKey;
+        }
         if ($message->fallbackSms !== null) {
             $params['fallback'] = ['sms' => $message->fallbackSms];
         }

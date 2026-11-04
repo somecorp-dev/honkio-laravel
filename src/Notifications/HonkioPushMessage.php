@@ -15,6 +15,7 @@ final class HonkioPushMessage
     public ?string $deviceId = null;
     /** @var array{to: string, from: string, body: string}|null */
     public ?array $fallbackSms = null;
+    public ?string $collapseKey = null;
 
     public static function create(): self
     {
@@ -73,7 +74,18 @@ final class HonkioPushMessage
         return $this;
     }
 
-    /** Send this text when no device accepts the push. It follows every rule a normal SMS does. */
+    /**
+     * A newer push with the same key replaces an older one not yet shown
+     * (APNs apns-collapse-id, FCM collapse_key). At most 64 bytes.
+     */
+    public function collapseKey(string $collapseKey): self
+    {
+        $this->collapseKey = $collapseKey;
+
+        return $this;
+    }
+
+    /** Send this text when no device accepts the push. It follows every rule a normal SMS does, and the API key needs messages:w. */
     public function fallbackSms(string $to, string $from, string $body): self
     {
         $this->fallbackSms = ['to' => $to, 'from' => $from, 'body' => $body];
