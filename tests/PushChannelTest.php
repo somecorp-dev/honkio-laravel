@@ -133,6 +133,26 @@ class PushChannelTest extends TestCase
         $this->assertSame(0, $this->sentBody(1)['ttl']);
     }
 
+    public function test_the_docs_push_samples_call_builder_methods_that_exist(): void
+    {
+        $file = __DIR__ . '/../../../web/lib/docs-samples/sdk-php.ts';
+        if (!is_file($file)) {
+            $this->markTestSkipped('reads web/lib/docs-samples from the HonkIO monorepo');
+        }
+        $source = (string) file_get_contents($file);
+        $checked = 0;
+        foreach (['laravelPushSend', 'laravelPushSendFallback'] as $name) {
+            $this->assertSame(1, preg_match('/^ {2}' . $name . ': `((?:[^`\\\\]|\\\\.)*)`/m', $source, $m), "$name is in sdk-php.ts");
+            $this->assertSame(1, preg_match('/HonkioPushMessage::create\(\)(.*?);/s', $m[1], $chain), "$name builds a HonkioPushMessage");
+            preg_match_all('/->(\w+)\(/', $chain[1], $calls);
+            foreach ($calls[1] as $method) {
+                $this->assertTrue(method_exists(HonkioPushMessage::class, $method), "$name: HonkioPushMessage has no $method()");
+                $checked++;
+            }
+        }
+        $this->assertGreaterThan(0, $checked);
+    }
+
     public function test_priority_accepts_only_high_or_normal(): void
     {
         $this->assertSame('high', HonkioPushMessage::create()->priority('high')->priority);
