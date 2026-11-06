@@ -2,6 +2,15 @@
 
 Versions are published to Packagist from a read-only mirror by hand; a version without a date is not published yet.
 
+## 0.4.0
+
+Requires `honkio/honkio-php` ^0.4.
+
+### Added
+
+- `HonkioPushMessage` gains `badge()`, `sound()`, `threadId()`, `ttl()` and `priority()` (`'high'` or `'normal'`), sent to the API as `badge`, `sound`, `thread_id`, `ttl` and `priority`. Unset options are left out; a zero badge or ttl is sent.
+- Scheduled SMS and push, through `honkio/honkio-php` 0.4: `scheduled_at`, `expires_at`, and `update` and `cancel` on `messages` and `push`.
+
 ## 0.3.1 (2026-11-02)
 
 Requires `honkio/honkio-php` ^0.3.1.
