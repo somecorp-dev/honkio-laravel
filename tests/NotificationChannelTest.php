@@ -89,6 +89,22 @@ class NotificationChannelTest extends TestCase
         $this->assertSame('+14165550100', $this->sentBody(1)['from']);
     }
 
+    public function test_a_template_is_sent_in_place_of_the_content(): void
+    {
+        $this->fakeApi($this->apiJson(['id' => 'msg_4']), $this->apiJson(['id' => 'msg_5']));
+
+        $this->channel()->send($this->notifiable(), $this->notification(
+            HonkioMessage::create()->template('signin-code', ['code' => '482913'], 'fr'),
+        ));
+        $this->channel()->send($this->notifiable(), $this->notification(HonkioMessage::create()->template('notice')));
+
+        $this->assertSame(
+            ['from' => '+14165550100', 'to' => '+16135550123', 'template' => 'signin-code', 'variables' => ['code' => '482913'], 'language' => 'fr'],
+            $this->sentBody(0),
+        );
+        $this->assertSame(['from' => '+14165550100', 'to' => '+16135550123', 'template' => 'notice'], $this->sentBody(1));
+    }
+
     public function test_no_route_means_no_call(): void
     {
         $this->fakeApi();

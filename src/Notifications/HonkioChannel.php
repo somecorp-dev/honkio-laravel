@@ -51,9 +51,20 @@ class HonkioChannel
             $key = 'laravel-notification-' . $notification->id . '-' . sha1(get_class($notifiable) . ':' . $who);
         }
 
-        return $this->client->messages->send(
-            ['from' => $from, 'to' => (string) $to, 'body' => $message->content],
-            $key,
-        );
+        $params = ['from' => $from, 'to' => (string) $to];
+        if ($message->template !== null) {
+            // The template's SMS part is the text; content is not sent with it.
+            $params['template'] = $message->template;
+            if ($message->variables !== []) {
+                $params['variables'] = $message->variables;
+            }
+            if ($message->language !== null) {
+                $params['language'] = $message->language;
+            }
+        } else {
+            $params['body'] = $message->content;
+        }
+
+        return $this->client->messages->send($params, $key);
     }
 }

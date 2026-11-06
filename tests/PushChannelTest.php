@@ -121,6 +121,20 @@ class PushChannelTest extends TestCase
         );
     }
 
+    public function test_a_template_is_sent_in_place_of_title_and_body(): void
+    {
+        $this->fakeApi($this->apiJson(['id' => 'ps_7']));
+
+        $this->channel()->send($this->notifiable(), $this->notification(
+            HonkioPushMessage::create()->app('pa_1')->template('order-ready', ['orderId' => '42'], 'fr'),
+        ));
+
+        $this->assertSame(
+            ['app_id' => 'pa_1', 'to' => ['user_id' => 'u_7'], 'template' => 'order-ready', 'variables' => ['orderId' => '42'], 'language' => 'fr'],
+            $this->sentBody(),
+        );
+    }
+
     public function test_unset_options_are_left_out_and_a_zero_badge_or_ttl_is_sent(): void
     {
         $this->fakeApi($this->apiJson(['id' => 'ps_5']), $this->apiJson(['id' => 'ps_6']));

@@ -2,6 +2,12 @@
 
 Versions are published to Packagist from a read-only mirror by hand; a version without a date is not published yet.
 
+## Unreleased
+
+### Added
+
+- `HonkioMessage::template($idOrAlias, $variables, $language)` and `HonkioPushMessage::template(...)` send a stored template's SMS or push part in place of the text, in English or French (`'en'` or `'fr'`, null for the template's default language).
+
 ## 0.3.1 (2026-11-02)
 
 Requires `honkio/honkio-php` ^0.3.1.

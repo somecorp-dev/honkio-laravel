@@ -50,6 +50,15 @@ class HonkioPushChannel
         if ($message->body !== null) {
             $params['body'] = $message->body;
         }
+        if ($message->template !== null) {
+            $params['template'] = $message->template;
+            if ($message->variables !== []) {
+                $params['variables'] = $message->variables;
+            }
+            if ($message->language !== null) {
+                $params['language'] = $message->language;
+            }
+        }
         if ($message->data !== null) {
             $params['data'] = $message->data;
         }

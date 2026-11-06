@@ -24,6 +24,12 @@ final class HonkioPushMessage
     public ?int $ttl = null;
     /** @var 'high'|'normal'|null */
     public ?string $priority = null;
+    /** A stored template's id or alias, sent in place of the text; see template(). */
+    public ?string $template = null;
+    /** @var array<string, string|int|float> */
+    public array $variables = [];
+    /** 'en' or 'fr'; null for the template's default language. */
+    public ?string $language = null;
 
     public static function create(): self
     {
@@ -48,6 +54,23 @@ final class HonkioPushMessage
     public function body(string $body): self
     {
         $this->body = $body;
+
+        return $this;
+    }
+
+    /**
+     * Send a stored template's push part instead of a title and body: its id
+     * or alias, values for its variables, and its language ('en' or 'fr', null
+     * for the default). A language without a push part uses the default
+     * language's.
+     *
+     * @param array<string, string|int|float> $variables
+     */
+    public function template(string $idOrAlias, array $variables = [], ?string $language = null): self
+    {
+        $this->template = $idOrAlias;
+        $this->variables = $variables;
+        $this->language = $language;
 
         return $this;
     }
