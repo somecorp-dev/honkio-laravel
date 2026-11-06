@@ -2,28 +2,22 @@
 
 Versions are published to Packagist from a read-only mirror by hand; a version without a date is not published yet.
 
-## Unreleased
-
-### Added
-
-- `HonkioMessage::template($idOrAlias, $variables, $language)` and `HonkioPushMessage::template(...)` send a stored template's SMS or push part in place of the text, in English or French (`'en'` or `'fr'`, null for the template's default language).
-- **Breaking:** `Honkio::templates()` on the facade now manages all templates (`/v1/templates`), the PHP SDK's resource for templates with email, SMS and push parts in English and French (an SMS-only or French template can now be made from code). The email-only resource (`/v1/email-templates`) is now `Honkio::emailTemplates()` (deprecated).
-
-- Notify through the `Honkio` facade, held back until it launches like push: `Honkio::notify()->send([...])`, `Honkio::notifications()->get($id)` and `->list()`, and `Honkio::recipients()->upsert($userId, [...])`, `update`, `get`, `list` and `delete` (the API answers `501 NOTIFY_COMING_SOON` until then). Needs the `honkio/honkio-php` release that adds them.
-
-### Changed
-
-- **Breaking:** push payload encryption now uses a key per device instead of one per app, through the PHP SDK. `Honkio::push()->encryption` (`set()`, `listKeys()`, `createKey()`, `activateKey()`, the per-app key resource) is removed: push is not launched yet. `Honkio::push()->devices->register()` takes `encryption_public_key` (the public key the HonkIO Swift or Android push package generated on the device; `null` removes the stored key) and the device it returns has `encryption_key_id`. `Honkio::push()->apps->create()` and `->update()` take `require_encryption`, in place of the app's `encryption_enabled`: `true` refuses a device without a key with `ENCRYPTION_KEY_MISSING`, never sent in plaintext and never charged. `HonkioPushMessage` and the `honkio-push` channel are unchanged.
-- A template notification retried by the queue (the same notification, so the same Idempotency-Key) replays the SMS it sent even after the template was changed, republished or deleted. The API binds the key to the template, its variables and its language exactly as sent, so a retry that changes any of them (the template's id for its alias, `1` for `"1"`, or a language left out for the default one named) is refused with `IDEMPOTENCY_KEY_REUSED` instead of sending a second text.
-
 ## 0.4.0
 
 Requires `honkio/honkio-php` ^0.4.
 
 ### Added
 
+- `HonkioMessage::template($idOrAlias, $variables, $language)` and `HonkioPushMessage::template(...)` send a stored template's SMS or push part in place of the text, in English or French (`'en'` or `'fr'`, null for the template's default language).
+- **Breaking:** `Honkio::templates()` on the facade now manages all templates (`/v1/templates`), the PHP SDK's resource for templates with email, SMS and push parts in English and French (an SMS-only or French template can now be made from code). The email-only resource (`/v1/email-templates`) is now `Honkio::emailTemplates()` (deprecated).
+- Notify through the `Honkio` facade, held back until it launches like push: `Honkio::notify()->send([...])`, `Honkio::notifications()->get($id)` and `->list()`, and `Honkio::recipients()->upsert($userId, [...])`, `update`, `get`, `list` and `delete` (the API answers `501 NOTIFY_COMING_SOON` until then). Needs the `honkio/honkio-php` release that adds them.
 - `HonkioPushMessage` gains `badge()`, `sound()`, `threadId()`, `ttl()` and `priority()` (`'high'` or `'normal'`), sent to the API as `badge`, `sound`, `thread_id`, `ttl` and `priority`. Unset options are left out; a zero badge or ttl is sent.
 - Scheduled SMS and push, through `honkio/honkio-php` 0.4: `scheduled_at`, `expires_at`, and `update` and `cancel` on `messages` and `push`.
+
+### Changed
+
+- **Breaking:** push payload encryption now uses a key per device instead of one per app, through the PHP SDK. `Honkio::push()->encryption` (`set()`, `listKeys()`, `createKey()`, `activateKey()`, the per-app key resource) is removed: push is not launched yet. `Honkio::push()->devices->register()` takes `encryption_public_key` (the public key the HonkIO Swift or Android push package generated on the device; `null` removes the stored key) and the device it returns has `encryption_key_id`. `Honkio::push()->apps->create()` and `->update()` take `require_encryption`, in place of the app's `encryption_enabled`: `true` refuses a device without a key with `ENCRYPTION_KEY_MISSING`, never sent in plaintext and never charged. `HonkioPushMessage` and the `honkio-push` channel are unchanged.
+- A template notification retried by the queue (the same notification, so the same Idempotency-Key) replays the SMS it sent even after the template was changed, republished or deleted. The API binds the key to the template, its variables and its language exactly as sent, so a retry that changes any of them (the template's id for its alias, `1` for `"1"`, or a language left out for the default one named) is refused with `IDEMPOTENCY_KEY_REUSED` instead of sending a second text.
 
 ## 0.3.1 (2026-11-02)
 
