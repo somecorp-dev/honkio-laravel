@@ -13,6 +13,9 @@ use Illuminate\Support\Facades\Facade;
  *
  * @method static \Honkio\Resource\Emails emails()
  * @method static \Honkio\Resource\Push push()
+ * @method static \Honkio\Resource\Notify notify()
+ * @method static \Honkio\Resource\Notifications notifications()
+ * @method static \Honkio\Resource\Recipients recipients()
  * @method static \Honkio\Resource\Messages messages()
  * @method static \Honkio\Resource\Batch batch()
  * @method static \Honkio\Resource\Domains domains()

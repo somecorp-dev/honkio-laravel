@@ -8,6 +8,8 @@ Versions are published to Packagist from a read-only mirror by hand; a version w
 
 - `HonkioMessage::template($idOrAlias, $variables, $language)` and `HonkioPushMessage::template(...)` send a stored template's SMS or push part in place of the text, in English or French (`'en'` or `'fr'`, null for the template's default language).
 
+- Notify through the `Honkio` facade, held back until it launches like push: `Honkio::notify()->send([...])`, `Honkio::notifications()->get($id)` and `->list()`, and `Honkio::recipients()->upsert($userId, [...])`, `update`, `get`, `list` and `delete` (the API answers `501 NOTIFY_COMING_SOON` until then). Needs the `honkio/honkio-php` release that adds them.
+
 ### Changed
 
 - A template notification retried by the queue (the same notification, so the same Idempotency-Key) replays the SMS it sent even after the template was changed, republished or deleted. The API binds the key to the template, its variables and its language exactly as sent, so a retry that changes any of them (the template's id for its alias, `1` for `"1"`, or a language left out for the default one named) is refused with `IDEMPOTENCY_KEY_REUSED` instead of sending a second text.
