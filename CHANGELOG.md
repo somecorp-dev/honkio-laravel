@@ -7,7 +7,7 @@ Versions are published to Packagist from a read-only mirror by hand; a version w
 ### Added
 
 - `HonkioMessage::template($idOrAlias, $variables, $language)` and `HonkioPushMessage::template(...)` send a stored template's SMS or push part in place of the text, in English or French (`'en'` or `'fr'`, null for the template's default language).
-- `Honkio::channelTemplates()` on the facade: the PHP SDK's new `/v1/templates` resource, for templates with email, SMS and push parts in English and French (an SMS-only or French template can now be made from code).
+- **Breaking:** `Honkio::templates()` on the facade now manages all templates (`/v1/templates`), the PHP SDK's resource for templates with email, SMS and push parts in English and French (an SMS-only or French template can now be made from code). The email-only resource (`/v1/email-templates`) is now `Honkio::emailTemplates()` (deprecated).
 
 ### Changed
 
