@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static \Honkio\Resource\Domains domains()
  * @method static \Honkio\Resource\Suppressions suppressions()
  * @method static \Honkio\Resource\Templates templates()
+ * @method static \Honkio\Resource\ChannelTemplates channelTemplates()
  * @method static \Honkio\Resource\PhoneNumbers phoneNumbers()
  * @method static \Honkio\Resource\Consents consents()
  * @method static \Honkio\Resource\Webhooks webhooks()
