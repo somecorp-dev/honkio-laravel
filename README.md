@@ -163,7 +163,7 @@ For a second app, build another provider: `Socialite::buildProvider(Honkio\Larav
 
 ## Retries
 
-The client sends a call again, after the wait the API asks for, when the API refused it only because it should wait: `NUMBER_RATE_LIMITED` (the sending number already has a minute of message parts waiting at the carrier), `CARRIER_THROTTLED` and `CARRIER_UNAVAILABLE` (nothing was sent or charged), and `RATE_LIMITED` or a connection failure on a GET or a send with an idempotency key. `CARRIER_TIMEOUT` (the message may have gone out) and the daily, per-recipient and pause limits are never retried. By default it retries at most 2 times and does not wait out a wait longer than 60 seconds; then the exception is thrown as usual, and the queue's own retries apply.
+The client sends a call again, after the wait the API asks for, when the API refused it only because it should wait: `NUMBER_RATE_LIMITED` (the sending number already has a minute of message segments waiting at the carrier), `CARRIER_THROTTLED` and `CARRIER_UNAVAILABLE` (nothing was sent or charged), and `RATE_LIMITED` or a connection failure on a GET or a send with an idempotency key. `CARRIER_TIMEOUT` (the message may have gone out) and the daily, per-recipient and pause limits are never retried. By default it retries at most 2 times and does not wait out a wait longer than 60 seconds; then the exception is thrown as usual, and the queue's own retries apply.
 
 Each wait blocks the worker. On a queue that retries jobs itself, you can turn the client's retries off with `HONKIO_MAX_RETRIES=0`, or lower `HONKIO_MAX_RETRY_DELAY`. Messages and email always carry an idempotency key, so the client's retries never send twice.
 
