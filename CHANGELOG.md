@@ -2,6 +2,12 @@
 
 Versions are published to Packagist from a read-only mirror by hand; a version without a date is not published yet.
 
+## Unreleased
+
+### Added
+
+- `Honkio::pricing()` on the facade: the current prices (`GET /v1/pricing`). Needs the `honkio/honkio-php` release that adds `pricing`.
+
 ## 0.4.0 (2026-11-06)
 
 Requires `honkio/honkio-php` ^0.4.

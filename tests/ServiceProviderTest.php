@@ -46,6 +46,7 @@ class ServiceProviderTest extends TestCase
         $this->assertSame($this->app->make(Honkio::class), HonkioFacade::getFacadeRoot());
         $this->assertSame($this->app->make(Honkio::class)->emails, HonkioFacade::emails());
         $this->assertSame($this->app->make(Honkio::class)->sendLimit, HonkioFacade::sendLimit());
+        $this->assertSame($this->app->make(Honkio::class)->pricing, HonkioFacade::pricing());
     }
 
     public function test_the_facade_documents_every_resource_of_the_client(): void
